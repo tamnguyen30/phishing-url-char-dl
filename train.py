@@ -5,6 +5,7 @@ Usage examples:
   python train.py --data data/PhiUSIIL_Phishing_URL_Dataset.csv --model charcnn
   python train.py --data data/PhiUSIIL_Phishing_URL_Dataset.csv --model bilstm
   python train.py --data ... --model charcnn --max_len 100 --emb_dim 32   # ablation
+  python train.py --data ... --model charcnn --normalize host             # hostname-only URLs
 
 Key design choices (to avoid leakage):
   * exact-duplicate URLs are dropped
@@ -34,9 +35,10 @@ def set_seed(seed):
 def host_of(url):
     u = url if "://" in url else "http://" + url
     try:
-        return (urlparse(u).hostname or "").lower()
+        h = (urlparse(u).hostname or "").lower()
     except ValueError:
         return ""
+    return h[4:] if h.startswith("www.") else h  # www.x.com and x.com are the same group
 
 
 def load_and_split(args):
@@ -50,6 +52,10 @@ def load_and_split(args):
         df = df.sample(args.max_rows, random_state=args.seed).reset_index(drop=True)
     df["y"] = (df["label"] == args.phish_label).astype(int)  # 1 = phishing
     df["host"] = df["url"].map(host_of)
+    if args.normalize == "host":
+        # remove path/scheme/www so the model cannot use the "has a path" shortcut
+        df["url"] = df["host"]
+        df = df[df["url"] != ""].reset_index(drop=True)
     print(f"rows: {n0} -> {len(df)} after dedup | phishing rate: {df['y'].mean():.3f}")
 
     gss = GroupShuffleSplit(n_splits=1, test_size=0.15, random_state=args.seed)
@@ -192,6 +198,8 @@ if __name__ == "__main__":
     ap.add_argument("--phish_label", type=int, default=0,
                     help="value in label column meaning phishing (PhiUSIIL: 0; VERIFY for your file)")
     ap.add_argument("--model", choices=["tfidf_lr", "charcnn", "bilstm"], required=True)
+    ap.add_argument("--normalize", choices=["none", "host"], default="none",
+                    help="host: replace each URL by its hostname (removes path shortcut)")
     ap.add_argument("--max_len", type=int, default=200)
     ap.add_argument("--emb_dim", type=int, default=64)
     ap.add_argument("--epochs", type=int, default=15)
@@ -210,6 +218,6 @@ if __name__ == "__main__":
     print("TEST (host-disjoint):", {k: round(v, 4) for k, v in test_m.items()})
 
     os.makedirs(args.out, exist_ok=True)
-    tag = f"{args.model}_len{args.max_len}_emb{args.emb_dim}_seed{args.seed}"
+    tag = f"{args.model}_norm{args.normalize}_len{args.max_len}_emb{args.emb_dim}_seed{args.seed}"
     with open(os.path.join(args.out, tag + ".json"), "w") as f:
         json.dump(dict(args=vars(args), test=test_m, extra=extra), f, indent=2)
