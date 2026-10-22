@@ -1,0 +1,40 @@
+{
+  "args": {
+    "data": "data/PhiUSIIL_Phishing_URL_Dataset.csv",
+    "url_col": "URL",
+    "label_col": "label",
+    "phish_label": 0,
+    "model": "tfidf_lr",
+    "normalize": "host",
+    "max_len": 200,
+    "emb_dim": 64,
+    "epochs": 15,
+    "patience": 3,
+    "bs": 256,
+    "lr": 0.001,
+    "C": 10.0,
+    "seed": 43,
+    "max_rows": 0,
+    "out": "results",
+    "no_preds": false
+  },
+  "test": {
+    "accuracy": 0.869784723600987,
+    "precision": 0.9036304144593331,
+    "recall": 0.7756971845114693,
+    "f1": 0.8347907445392062,
+    "auroc": 0.9218469562259092,
+    "auprc": 0.9268063812292242
+  },
+  "extra": {
+    "train_time_s": 6.5425498485565186,
+    "val": {
+      "accuracy": 0.8667539043609365,
+      "precision": 0.9041656823371919,
+      "recall": 0.7680781323165429,
+      "f1": 0.8305844907407407,
+      "auroc": 0.9193465944310968,
+      "auprc": 0.9239648520556234
+    }
+  }
+}

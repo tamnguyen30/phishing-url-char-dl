@@ -5,13 +5,14 @@ Usage examples:
   python train.py --data data/PhiUSIIL_Phishing_URL_Dataset.csv --model charcnn
   python train.py --data data/PhiUSIIL_Phishing_URL_Dataset.csv --model bilstm
   python train.py --data ... --model charcnn --max_len 100 --emb_dim 32   # ablation
+  python train.py --data ... --model charcnn --normalize strip            # drop scheme + leading www., keep path
   python train.py --data ... --model charcnn --normalize host             # hostname-only URLs
 
 Key design choices (to avoid leakage):
   * exact-duplicate URLs are dropped
   * train/val/test are split by HOSTNAME (GroupShuffleSplit), so no host appears in two splits
 """
-import argparse, json, os, random, time
+import argparse, json, os, random, re, time
 from urllib.parse import urlparse
 
 import numpy as np
@@ -41,6 +42,12 @@ def host_of(url):
     return h[4:] if h.startswith("www.") else h  # www.x.com and x.com are the same group
 
 
+def strip_prefix(url):
+    """Remove only the scheme (https://) and a leading 'www.'; keep host, path and query."""
+    u = re.sub(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", "", url)
+    return re.sub(r"^www\.", "", u, flags=re.I)
+
+
 def load_and_split(args):
     df = pd.read_csv(args.data)
     df = df[[args.url_col, args.label_col]].dropna()
@@ -55,6 +62,10 @@ def load_and_split(args):
     if args.normalize == "host":
         # remove path/scheme/www so the model cannot use the "has a path" shortcut
         df["url"] = df["host"]
+        df = df[df["url"] != ""].reset_index(drop=True)
+    elif args.normalize == "strip":
+        # remove only scheme + leading www.; the path is kept
+        df["url"] = df["url"].map(strip_prefix)
         df = df[df["url"] != ""].reset_index(drop=True)
     print(f"rows: {n0} -> {len(df)} after dedup | phishing rate: {df['y'].mean():.3f}")
 
@@ -175,7 +186,7 @@ def run_neural(args, train, val, test):
     train_time = time.time() - t0
     model.load_state_dict(best_state)
     t1 = time.time(); p = predict(model, tel, dev); infer_time = time.time() - t1
-    return metrics(test.y.values, p), dict(curve=curve, train_time_s=train_time, test_infer_time_s=infer_time)
+    return metrics(test.y.values, p), dict(curve=curve, train_time_s=train_time, test_infer_time_s=infer_time), p
 
 
 def run_tfidf(args, train, val, test):
@@ -186,7 +197,8 @@ def run_tfidf(args, train, val, test):
     clf = LogisticRegression(max_iter=1000, C=args.C, n_jobs=-1).fit(Xtr, train.y)
     extra = dict(train_time_s=time.time() - t0,
                  val=metrics(val.y.values, clf.predict_proba(vec.transform(val.url))[:, 1]))
-    return metrics(test.y.values, clf.predict_proba(vec.transform(test.url))[:, 1]), extra
+    p = clf.predict_proba(vec.transform(test.url))[:, 1]
+    return metrics(test.y.values, p), extra, p
 
 
 # ----------------------------------------------------------------- main
@@ -198,8 +210,9 @@ if __name__ == "__main__":
     ap.add_argument("--phish_label", type=int, default=0,
                     help="value in label column meaning phishing (PhiUSIIL: 0; VERIFY for your file)")
     ap.add_argument("--model", choices=["tfidf_lr", "charcnn", "bilstm"], required=True)
-    ap.add_argument("--normalize", choices=["none", "host"], default="none",
-                    help="host: replace each URL by its hostname (removes path shortcut)")
+    ap.add_argument("--normalize", choices=["none", "strip", "host"], default="none",
+                    help="none: raw URL | strip: drop scheme and leading www., keep path | "
+                         "host: replace each URL by its hostname (drops the path too)")
     ap.add_argument("--max_len", type=int, default=200)
     ap.add_argument("--emb_dim", type=int, default=64)
     ap.add_argument("--epochs", type=int, default=15)
@@ -210,14 +223,18 @@ if __name__ == "__main__":
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--max_rows", type=int, default=0, help="subsample for quick debugging")
     ap.add_argument("--out", default="results")
+    ap.add_argument("--no_preds", action="store_true", help="do not save per-URL test predictions")
     args = ap.parse_args()
 
     set_seed(args.seed)
     train, val, test = load_and_split(args)
-    test_m, extra = (run_tfidf if args.model == "tfidf_lr" else run_neural)(args, train, val, test)
+    test_m, extra, p_test = (run_tfidf if args.model == "tfidf_lr" else run_neural)(args, train, val, test)
     print("TEST (host-disjoint):", {k: round(v, 4) for k, v in test_m.items()})
 
     os.makedirs(args.out, exist_ok=True)
     tag = f"{args.model}_norm{args.normalize}_len{args.max_len}_emb{args.emb_dim}_seed{args.seed}"
     with open(os.path.join(args.out, tag + ".json"), "w") as f:
         json.dump(dict(args=vars(args), test=test_m, extra=extra), f, indent=2)
+    if not args.no_preds:  # for error analysis; results/preds/ is gitignored (derived from the dataset)
+        pdir = os.path.join(args.out, "preds"); os.makedirs(pdir, exist_ok=True)
+        test.assign(p=p_test)[["url", "host", "y", "p"]].to_csv(os.path.join(pdir, tag + ".csv"), index=False)
