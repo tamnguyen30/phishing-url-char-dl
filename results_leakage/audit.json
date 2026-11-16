@@ -1,0 +1,831 @@
+{
+  "recorded_at": "2026-11-16T22:46:22.071831+00:00",
+  "input_sha256": "a236549cd369cd80bd478ff8e1779cbf44c58d5c3f79f7a51a1adbed7d06d1c6",
+  "git": {
+    "commit": "b99c48d40fd9a0972b8b79ecc40dc06566821bf5",
+    "status": " M README.md\n M requirements.txt\n M run_all.py\n M train.py\n?? audit_splits.py\n?? splitting.py\n?? suffixes/README.md\n?? suffixes/public_suffix_list.dat\n?? tests/test_splits.py\n"
+  },
+  "parser": {
+    "parser": "tldextract",
+    "parser_version": "5.3.0",
+    "snapshot": [
+      "VERSION: 2025-04-07_15-51-09_UTC",
+      "COMMIT: 5fc8d12c1624ddbc56a80e944aca151a8ee466a1"
+    ],
+    "sha256": "b69315c085d53972724b8f2df111ffc329b0c84fe0a47d62c8c91655cc774a38",
+    "private_suffixes": true,
+    "network": false
+  },
+  "python": "3.13.1 (v3.13.1:06714517797, Dec  3 2024, 14:00:22) [Clang 15.0.0 (clang-1500.3.9.4)]",
+  "os": "macOS-15.6.1-arm64-arm-64bit-Mach-O",
+  "dependency_versions": {
+    "pandas": "3.1.1",
+    "numpy": "2.5.5",
+    "scikit-learn": "1.9.1",
+    "tldextract": "5.3.0"
+  },
+  "gpu": {
+    "torch_version": "2.15.0",
+    "cuda_build": null,
+    "cuda_available": false,
+    "mps_available": false,
+    "cuda_devices": [],
+    "nvidia_smi_unavailable": "[Errno 2] No such file or directory: 'nvidia-smi'"
+  },
+  "cleaning": {
+    "original": {
+      "rows": 235795,
+      "phishing": 100945,
+      "legitimate": 134850,
+      "missing_labels": 0
+    },
+    "non_missing": {
+      "rows": 235795,
+      "phishing": 100945,
+      "legitimate": 134850,
+      "missing_labels": 0
+    },
+    "deduplicated": {
+      "rows": 235370,
+      "phishing": 100520,
+      "legitimate": 134850,
+      "missing_labels": 0
+    }
+  },
+  "grouping_status": {
+    "registrable": 233998,
+    "ip": 606,
+    "no_registrable_suffix": 766,
+    "malformed": 0
+  },
+  "grouping_unique_keys": {
+    "registrable": 197538,
+    "ip": 157,
+    "no_registrable_suffix": 14,
+    "malformed": 0
+  },
+  "exact_audit_excluded_malformed_urls": 0,
+  "normalization": "none; original deduplicated URLs before model normalization",
+  "audits": {
+    "hostname": {
+      "42": {
+        "partitions": {
+          "train": {
+            "urls": 164421,
+            "phishing": 70120,
+            "legitimate": 94301,
+            "hostnames": 153365,
+            "domain_group_keys": 139214,
+            "registrable_domains": 139097,
+            "grouping_status": {
+              "registrable": 163225,
+              "ip": 433,
+              "no_registrable_suffix": 763,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 139097,
+              "ip": 106,
+              "no_registrable_suffix": 11,
+              "malformed": 0
+            }
+          },
+          "validation": {
+            "urls": 35531,
+            "phishing": 15242,
+            "legitimate": 20289,
+            "hostnames": 32864,
+            "domain_group_keys": 30529,
+            "registrable_domains": 30496,
+            "grouping_status": {
+              "registrable": 35434,
+              "ip": 95,
+              "no_registrable_suffix": 2,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 30496,
+              "ip": 31,
+              "no_registrable_suffix": 2,
+              "malformed": 0
+            }
+          },
+          "test": {
+            "urls": 35418,
+            "phishing": 15158,
+            "legitimate": 20260,
+            "hostnames": 32865,
+            "domain_group_keys": 30586,
+            "registrable_domains": 30565,
+            "grouping_status": {
+              "registrable": 35339,
+              "ip": 78,
+              "no_registrable_suffix": 1,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 30565,
+              "ip": 20,
+              "no_registrable_suffix": 1,
+              "malformed": 0
+            }
+          }
+        },
+        "pairs": {
+          "train/validation": {
+            "shared_registrable_domains": 1270,
+            "shared_domain_group_keys": 1270,
+            "shared_hostnames": 0,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 0,
+              "left_urls": 0,
+              "right_urls": 0
+            },
+            "possible_path_similarities": {
+              "shared_keys": 803,
+              "left_urls": 28573,
+              "right_urls": 6474
+            },
+            "possible_query_similarities": {
+              "shared_keys": 129,
+              "left_urls": 2356,
+              "right_urls": 732
+            }
+          },
+          "train/test": {
+            "shared_registrable_domains": 1265,
+            "shared_domain_group_keys": 1265,
+            "shared_hostnames": 0,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 0,
+              "left_urls": 0,
+              "right_urls": 0
+            },
+            "possible_path_similarities": {
+              "shared_keys": 730,
+              "left_urls": 28530,
+              "right_urls": 6621
+            },
+            "possible_query_similarities": {
+              "shared_keys": 139,
+              "left_urls": 2311,
+              "right_urls": 537
+            }
+          },
+          "validation/test": {
+            "shared_registrable_domains": 663,
+            "shared_domain_group_keys": 663,
+            "shared_hostnames": 0,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 0,
+              "left_urls": 0,
+              "right_urls": 0
+            },
+            "possible_path_similarities": {
+              "shared_keys": 388,
+              "left_urls": 5975,
+              "right_urls": 6074
+            },
+            "possible_query_similarities": {
+              "shared_keys": 85,
+              "left_urls": 648,
+              "right_urls": 450
+            }
+          }
+        }
+      },
+      "43": {
+        "partitions": {
+          "train": {
+            "urls": 164960,
+            "phishing": 70618,
+            "legitimate": 94342,
+            "hostnames": 153365,
+            "domain_group_keys": 139229,
+            "registrable_domains": 139115,
+            "grouping_status": {
+              "registrable": 163959,
+              "ip": 430,
+              "no_registrable_suffix": 571,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 139115,
+              "ip": 106,
+              "no_registrable_suffix": 8,
+              "malformed": 0
+            }
+          },
+          "validation": {
+            "urls": 35153,
+            "phishing": 14949,
+            "legitimate": 20204,
+            "hostnames": 32864,
+            "domain_group_keys": 30484,
+            "registrable_domains": 30453,
+            "grouping_status": {
+              "registrable": 34893,
+              "ip": 69,
+              "no_registrable_suffix": 191,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 30453,
+              "ip": 29,
+              "no_registrable_suffix": 2,
+              "malformed": 0
+            }
+          },
+          "test": {
+            "urls": 35257,
+            "phishing": 14953,
+            "legitimate": 20304,
+            "hostnames": 32865,
+            "domain_group_keys": 30508,
+            "registrable_domains": 30482,
+            "grouping_status": {
+              "registrable": 35146,
+              "ip": 107,
+              "no_registrable_suffix": 4,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 30482,
+              "ip": 22,
+              "no_registrable_suffix": 4,
+              "malformed": 0
+            }
+          }
+        },
+        "pairs": {
+          "train/validation": {
+            "shared_registrable_domains": 1211,
+            "shared_domain_group_keys": 1211,
+            "shared_hostnames": 0,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 0,
+              "left_urls": 0,
+              "right_urls": 0
+            },
+            "possible_path_similarities": {
+              "shared_keys": 864,
+              "left_urls": 28786,
+              "right_urls": 6588
+            },
+            "possible_query_similarities": {
+              "shared_keys": 135,
+              "left_urls": 2338,
+              "right_urls": 598
+            }
+          },
+          "train/test": {
+            "shared_registrable_domains": 1215,
+            "shared_domain_group_keys": 1215,
+            "shared_hostnames": 0,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 0,
+              "left_urls": 0,
+              "right_urls": 0
+            },
+            "possible_path_similarities": {
+              "shared_keys": 641,
+              "left_urls": 28220,
+              "right_urls": 6441
+            },
+            "possible_query_similarities": {
+              "shared_keys": 133,
+              "left_urls": 2398,
+              "right_urls": 609
+            }
+          },
+          "validation/test": {
+            "shared_registrable_domains": 621,
+            "shared_domain_group_keys": 621,
+            "shared_hostnames": 0,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 0,
+              "left_urls": 0,
+              "right_urls": 0
+            },
+            "possible_path_similarities": {
+              "shared_keys": 432,
+              "left_urls": 5993,
+              "right_urls": 6174
+            },
+            "possible_query_similarities": {
+              "shared_keys": 84,
+              "left_urls": 486,
+              "right_urls": 536
+            }
+          }
+        }
+      },
+      "44": {
+        "partitions": {
+          "train": {
+            "urls": 164164,
+            "phishing": 69676,
+            "legitimate": 94488,
+            "hostnames": 153365,
+            "domain_group_keys": 139128,
+            "registrable_domains": 138997,
+            "grouping_status": {
+              "registrable": 163514,
+              "ip": 426,
+              "no_registrable_suffix": 224,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 138997,
+              "ip": 120,
+              "no_registrable_suffix": 11,
+              "malformed": 0
+            }
+          },
+          "validation": {
+            "urls": 35861,
+            "phishing": 15726,
+            "legitimate": 20135,
+            "hostnames": 32864,
+            "domain_group_keys": 30581,
+            "registrable_domains": 30559,
+            "grouping_status": {
+              "registrable": 35394,
+              "ip": 108,
+              "no_registrable_suffix": 359,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 30559,
+              "ip": 21,
+              "no_registrable_suffix": 1,
+              "malformed": 0
+            }
+          },
+          "test": {
+            "urls": 35345,
+            "phishing": 15118,
+            "legitimate": 20227,
+            "hostnames": 32865,
+            "domain_group_keys": 30509,
+            "registrable_domains": 30491,
+            "grouping_status": {
+              "registrable": 35090,
+              "ip": 72,
+              "no_registrable_suffix": 183,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 30491,
+              "ip": 16,
+              "no_registrable_suffix": 2,
+              "malformed": 0
+            }
+          }
+        },
+        "pairs": {
+          "train/validation": {
+            "shared_registrable_domains": 1248,
+            "shared_domain_group_keys": 1248,
+            "shared_hostnames": 0,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 0,
+              "left_urls": 0,
+              "right_urls": 0
+            },
+            "possible_path_similarities": {
+              "shared_keys": 732,
+              "left_urls": 28559,
+              "right_urls": 6657
+            },
+            "possible_query_similarities": {
+              "shared_keys": 142,
+              "left_urls": 2417,
+              "right_urls": 627
+            }
+          },
+          "train/test": {
+            "shared_registrable_domains": 1181,
+            "shared_domain_group_keys": 1181,
+            "shared_hostnames": 0,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 0,
+              "left_urls": 0,
+              "right_urls": 0
+            },
+            "possible_path_similarities": {
+              "shared_keys": 517,
+              "left_urls": 27852,
+              "right_urls": 6270
+            },
+            "possible_query_similarities": {
+              "shared_keys": 137,
+              "left_urls": 2401,
+              "right_urls": 574
+            }
+          },
+          "validation/test": {
+            "shared_registrable_domains": 620,
+            "shared_domain_group_keys": 620,
+            "shared_hostnames": 0,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 0,
+              "left_urls": 0,
+              "right_urls": 0
+            },
+            "possible_path_similarities": {
+              "shared_keys": 317,
+              "left_urls": 6121,
+              "right_urls": 5973
+            },
+            "possible_query_similarities": {
+              "shared_keys": 91,
+              "left_urls": 539,
+              "right_urls": 499
+            }
+          }
+        }
+      }
+    },
+    "registrable": {
+      "42": {
+        "partitions": {
+          "train": {
+            "urls": 166319,
+            "phishing": 71855,
+            "legitimate": 94464,
+            "hostnames": 154001,
+            "domain_group_keys": 138395,
+            "registrable_domains": 138286,
+            "grouping_status": {
+              "registrable": 165303,
+              "ip": 445,
+              "no_registrable_suffix": 571,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 138286,
+              "ip": 100,
+              "no_registrable_suffix": 9,
+              "malformed": 0
+            }
+          },
+          "validation": {
+            "urls": 35457,
+            "phishing": 15330,
+            "legitimate": 20127,
+            "hostnames": 32931,
+            "domain_group_keys": 29657,
+            "registrable_domains": 29626,
+            "grouping_status": {
+              "registrable": 35141,
+              "ip": 124,
+              "no_registrable_suffix": 192,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 29626,
+              "ip": 28,
+              "no_registrable_suffix": 3,
+              "malformed": 0
+            }
+          },
+          "test": {
+            "urls": 33594,
+            "phishing": 13335,
+            "legitimate": 20259,
+            "hostnames": 32162,
+            "domain_group_keys": 29657,
+            "registrable_domains": 29626,
+            "grouping_status": {
+              "registrable": 33554,
+              "ip": 37,
+              "no_registrable_suffix": 3,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 29626,
+              "ip": 29,
+              "no_registrable_suffix": 2,
+              "malformed": 0
+            }
+          }
+        },
+        "pairs": {
+          "train/validation": {
+            "shared_registrable_domains": 0,
+            "shared_domain_group_keys": 0,
+            "shared_hostnames": 0,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 0,
+              "left_urls": 0,
+              "right_urls": 0
+            },
+            "possible_path_similarities": {
+              "shared_keys": 661,
+              "left_urls": 29126,
+              "right_urls": 5917
+            },
+            "possible_query_similarities": {
+              "shared_keys": 137,
+              "left_urls": 2446,
+              "right_urls": 659
+            }
+          },
+          "train/test": {
+            "shared_registrable_domains": 0,
+            "shared_domain_group_keys": 0,
+            "shared_hostnames": 0,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 0,
+              "left_urls": 0,
+              "right_urls": 0
+            },
+            "possible_path_similarities": {
+              "shared_keys": 437,
+              "left_urls": 28722,
+              "right_urls": 5755
+            },
+            "possible_query_similarities": {
+              "shared_keys": 131,
+              "left_urls": 2219,
+              "right_urls": 531
+            }
+          },
+          "validation/test": {
+            "shared_registrable_domains": 0,
+            "shared_domain_group_keys": 0,
+            "shared_hostnames": 0,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 0,
+              "left_urls": 0,
+              "right_urls": 0
+            },
+            "possible_path_similarities": {
+              "shared_keys": 223,
+              "left_urls": 5338,
+              "right_urls": 5435
+            },
+            "possible_query_similarities": {
+              "shared_keys": 87,
+              "left_urls": 474,
+              "right_urls": 459
+            }
+          }
+        }
+      },
+      "43": {
+        "partitions": {
+          "train": {
+            "urls": 166962,
+            "phishing": 72860,
+            "legitimate": 94102,
+            "hostnames": 154847,
+            "domain_group_keys": 138395,
+            "registrable_domains": 138276,
+            "grouping_status": {
+              "registrable": 165964,
+              "ip": 439,
+              "no_registrable_suffix": 559,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 138276,
+              "ip": 110,
+              "no_registrable_suffix": 9,
+              "malformed": 0
+            }
+          },
+          "validation": {
+            "urls": 34974,
+            "phishing": 14623,
+            "legitimate": 20351,
+            "hostnames": 32382,
+            "domain_group_keys": 29657,
+            "registrable_domains": 29628,
+            "grouping_status": {
+              "registrable": 34863,
+              "ip": 109,
+              "no_registrable_suffix": 2,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 29628,
+              "ip": 27,
+              "no_registrable_suffix": 2,
+              "malformed": 0
+            }
+          },
+          "test": {
+            "urls": 33434,
+            "phishing": 13037,
+            "legitimate": 20397,
+            "hostnames": 31865,
+            "domain_group_keys": 29657,
+            "registrable_domains": 29634,
+            "grouping_status": {
+              "registrable": 33171,
+              "ip": 58,
+              "no_registrable_suffix": 205,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 29634,
+              "ip": 20,
+              "no_registrable_suffix": 3,
+              "malformed": 0
+            }
+          }
+        },
+        "pairs": {
+          "train/validation": {
+            "shared_registrable_domains": 0,
+            "shared_domain_group_keys": 0,
+            "shared_hostnames": 0,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 0,
+              "left_urls": 0,
+              "right_urls": 0
+            },
+            "possible_path_similarities": {
+              "shared_keys": 687,
+              "left_urls": 29686,
+              "right_urls": 6137
+            },
+            "possible_query_similarities": {
+              "shared_keys": 130,
+              "left_urls": 2511,
+              "right_urls": 597
+            }
+          },
+          "train/test": {
+            "shared_registrable_domains": 0,
+            "shared_domain_group_keys": 0,
+            "shared_hostnames": 0,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 0,
+              "left_urls": 0,
+              "right_urls": 0
+            },
+            "possible_path_similarities": {
+              "shared_keys": 405,
+              "left_urls": 28987,
+              "right_urls": 5318
+            },
+            "possible_query_similarities": {
+              "shared_keys": 123,
+              "left_urls": 2380,
+              "right_urls": 504
+            }
+          },
+          "validation/test": {
+            "shared_registrable_domains": 0,
+            "shared_domain_group_keys": 0,
+            "shared_hostnames": 0,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 0,
+              "left_urls": 0,
+              "right_urls": 0
+            },
+            "possible_path_similarities": {
+              "shared_keys": 207,
+              "left_urls": 5354,
+              "right_urls": 4995
+            },
+            "possible_query_similarities": {
+              "shared_keys": 76,
+              "left_urls": 410,
+              "right_urls": 426
+            }
+          }
+        }
+      },
+      "44": {
+        "partitions": {
+          "train": {
+            "urls": 166719,
+            "phishing": 72222,
+            "legitimate": 94497,
+            "hostnames": 154597,
+            "domain_group_keys": 138395,
+            "registrable_domains": 138275,
+            "grouping_status": {
+              "registrable": 165660,
+              "ip": 476,
+              "no_registrable_suffix": 583,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 138275,
+              "ip": 108,
+              "no_registrable_suffix": 12,
+              "malformed": 0
+            }
+          },
+          "validation": {
+            "urls": 33479,
+            "phishing": 13236,
+            "legitimate": 20243,
+            "hostnames": 31825,
+            "domain_group_keys": 29657,
+            "registrable_domains": 29631,
+            "grouping_status": {
+              "registrable": 33431,
+              "ip": 47,
+              "no_registrable_suffix": 1,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 29631,
+              "ip": 25,
+              "no_registrable_suffix": 1,
+              "malformed": 0
+            }
+          },
+          "test": {
+            "urls": 35172,
+            "phishing": 15062,
+            "legitimate": 20110,
+            "hostnames": 32673,
+            "domain_group_keys": 29657,
+            "registrable_domains": 29632,
+            "grouping_status": {
+              "registrable": 34907,
+              "ip": 83,
+              "no_registrable_suffix": 182,
+              "malformed": 0
+            },
+            "grouping_unique_keys": {
+              "registrable": 29632,
+              "ip": 24,
+              "no_registrable_suffix": 1,
+              "malformed": 0
+            }
+          }
+        },
+        "pairs": {
+          "train/validation": {
+            "shared_registrable_domains": 0,
+            "shared_domain_group_keys": 0,
+            "shared_hostnames": 0,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 0,
+              "left_urls": 0,
+              "right_urls": 0
+            },
+            "possible_path_similarities": {
+              "shared_keys": 515,
+              "left_urls": 28456,
+              "right_urls": 5843
+            },
+            "possible_query_similarities": {
+              "shared_keys": 130,
+              "left_urls": 2419,
+              "right_urls": 478
+            }
+          },
+          "train/test": {
+            "shared_registrable_domains": 0,
+            "shared_domain_group_keys": 0,
+            "shared_hostnames": 1,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 1,
+              "left_urls": 2,
+              "right_urls": 1
+            },
+            "possible_path_similarities": {
+              "shared_keys": 479,
+              "left_urls": 28280,
+              "right_urls": 6184
+            },
+            "possible_query_similarities": {
+              "shared_keys": 130,
+              "left_urls": 2361,
+              "right_urls": 667
+            }
+          },
+          "validation/test": {
+            "shared_registrable_domains": 0,
+            "shared_domain_group_keys": 0,
+            "shared_hostnames": 0,
+            "scheme_www_hostcase_exact": {
+              "shared_keys": 0,
+              "left_urls": 0,
+              "right_urls": 0
+            },
+            "possible_path_similarities": {
+              "shared_keys": 237,
+              "left_urls": 5488,
+              "right_urls": 5826
+            },
+            "possible_query_similarities": {
+              "shared_keys": 81,
+              "left_urls": 399,
+              "right_urls": 577
+            }
+          }
+        }
+      }
+    }
+  }
+}

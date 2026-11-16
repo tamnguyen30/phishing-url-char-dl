@@ -13,7 +13,7 @@ Key design choices (to avoid leakage):
   * train/val/test are split by HOSTNAME (GroupShuffleSplit), so no host appears in two splits
 """
 import argparse, json, os, random, re, time
-from urllib.parse import urlparse
+from collections import Counter
 
 import numpy as np
 from dataset import load_dataset
@@ -23,7 +23,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (accuracy_score, average_precision_score, f1_score,
                              precision_score, recall_score, roc_auc_score)
-from sklearn.model_selection import GroupShuffleSplit
+from splitting import host_of, domain_of, split_frame, parser_metadata
 from torch.utils.data import DataLoader, TensorDataset
 
 
@@ -31,15 +31,6 @@ from torch.utils.data import DataLoader, TensorDataset
 def set_seed(seed):
     random.seed(seed); np.random.seed(seed)
     torch.manual_seed(seed); torch.cuda.manual_seed_all(seed)
-
-
-def host_of(url):
-    u = url if "://" in url else "http://" + url
-    try:
-        h = (urlparse(u).hostname or "").lower()
-    except ValueError:
-        return ""
-    return h[4:] if h.startswith("www.") else h  # www.x.com and x.com are the same group
 
 
 def strip_prefix(url):
@@ -54,6 +45,15 @@ def load_and_split(args):
     if args.max_rows:
         df = df.sample(args.max_rows, random_state=args.seed).reset_index(drop=True)
     df["host"] = df["url"].map(host_of)
+    grouping = getattr(args, "group_by", "hostname")
+    group_col = "host"
+    if grouping == "registrable":
+        parsed = df["url"].map(domain_of)
+        df["domain"] = parsed.map(lambda item: item[0])
+        df["domain_status"] = parsed.map(lambda item: item[1])
+        print("domain parser:", parser_metadata())
+        print("domain grouping status:", parsed.map(lambda item: item[1]).value_counts().to_dict())
+        group_col = "domain"
     if args.normalize == "host":
         # remove path/scheme/www so the model cannot use the "has a path" shortcut
         df["url"] = df["host"]
@@ -64,17 +64,7 @@ def load_and_split(args):
         df = df[df["url"] != ""].reset_index(drop=True)
     print(f"rows: {n0} -> {len(df)} after dedup | phishing rate: {df['y'].mean():.3f}")
 
-    gss = GroupShuffleSplit(n_splits=1, test_size=0.15, random_state=args.seed)
-    trval_idx, test_idx = next(gss.split(df, groups=df["host"]))
-    trval = df.iloc[trval_idx]
-    gss2 = GroupShuffleSplit(n_splits=1, test_size=0.15 / 0.85, random_state=args.seed)
-    tr_i, va_i = next(gss2.split(trval, groups=trval["host"]))
-    train, val, test = trval.iloc[tr_i], trval.iloc[va_i], df.iloc[test_idx]
-
-    # leakage check
-    assert not (set(train.host) & set(test.host)), "host leakage train/test"
-    assert not (set(train.host) & set(val.host)), "host leakage train/val"
-    assert not (set(val.host) & set(test.host)), "host leakage val/test"
+    train, val, test = split_frame(df, args.seed, group_col)
     for n, d in [("train", train), ("val", val), ("test", test)]:
         print(f"{n}: {len(d)} urls, {d.host.nunique()} hosts, phishing rate {d.y.mean():.3f}")
     return train, val, test
@@ -217,19 +207,28 @@ if __name__ == "__main__":
     ap.add_argument("--C", type=float, default=10.0)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--max_rows", type=int, default=0, help="subsample for quick debugging")
-    ap.add_argument("--out", default="results")
+    ap.add_argument("--group_by", choices=["hostname", "registrable"], default="hostname")
+    ap.add_argument("--out", default=None)
     ap.add_argument("--no_preds", action="store_true", help="do not save per-URL test predictions")
     args = ap.parse_args()
 
+    args.out = args.out or ("results" if args.group_by == "hostname" else "results_registrable")
+    if args.group_by == "registrable" and os.path.realpath(args.out) == os.path.realpath(os.path.join(os.path.dirname(__file__), "results")):
+        ap.error("registrable runs require a separate output directory")
     set_seed(args.seed)
     train, val, test = load_and_split(args)
     test_m, extra, p_test = (run_tfidf if args.model == "tfidf_lr" else run_neural)(args, train, val, test)
-    print("TEST (host-disjoint):", {k: round(v, 4) for k, v in test_m.items()})
+    split_label = "host-disjoint" if args.group_by == "hostname" else "registrable-group-disjoint"
+    print(f"TEST ({split_label}):", {k: round(v, 4) for k, v in test_m.items()})
 
     os.makedirs(args.out, exist_ok=True)
     tag = f"{args.model}_norm{args.normalize}_len{args.max_len}_emb{args.emb_dim}_seed{args.seed}"
     with open(os.path.join(args.out, tag + ".json"), "w") as f:
-        json.dump(dict(args=vars(args), test=test_m, extra=extra), f, indent=2)
+        json.dump(dict(args=vars(args), test=test_m, extra=extra,
+                       grouping_metadata=dict(**parser_metadata(), partitions={
+                           name: dict(Counter(part.domain_status))
+                           for name, part in (("train", train), ("validation", val), ("test", test))
+                       }) if args.group_by == "registrable" else None), f, indent=2)
     if not args.no_preds:  # for error analysis; results/preds/ is gitignored (derived from the dataset)
         pdir = os.path.join(args.out, "preds"); os.makedirs(pdir, exist_ok=True)
         test.assign(p=p_test)[["url", "host", "y", "p"]].to_csv(os.path.join(pdir, tag + ".csv"), index=False)
