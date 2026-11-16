@@ -5,3 +5,7 @@ results/preds/
 *.ckpt
 .venv/
 __pycache__/
+# Raw datasets and per-URL exports in any output directory
+*.csv
+**/preds/
+provenance/

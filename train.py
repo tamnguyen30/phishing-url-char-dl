@@ -16,7 +16,7 @@ import argparse, json, os, random, re, time
 from urllib.parse import urlparse
 
 import numpy as np
-import pandas as pd
+from dataset import load_dataset
 import torch
 import torch.nn as nn
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -49,15 +49,10 @@ def strip_prefix(url):
 
 
 def load_and_split(args):
-    df = pd.read_csv(args.data)
-    df = df[[args.url_col, args.label_col]].dropna()
-    df.columns = ["url", "label"]
-    df["url"] = df["url"].astype(str).str.strip()
-    n0 = len(df)
-    df = df.drop_duplicates(subset="url").reset_index(drop=True)
+    df, counts = load_dataset(args.data, args.url_col, args.label_col, args.phish_label)
+    n0 = counts["non_missing"]["rows"]
     if args.max_rows:
         df = df.sample(args.max_rows, random_state=args.seed).reset_index(drop=True)
-    df["y"] = (df["label"] == args.phish_label).astype(int)  # 1 = phishing
     df["host"] = df["url"].map(host_of)
     if args.normalize == "host":
         # remove path/scheme/www so the model cannot use the "has a path" shortcut
