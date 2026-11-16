@@ -65,3 +65,34 @@ Datasets, checkpoints, weights, and per-URL predictions (see `.gitignore`).
 
 ## AI assistance
 Starter code was assisted by Claude (Anthropic). Experiments were run and analyzed by the team.
+## Reproduce dataset and environment provenance
+After installing `requirements.txt`, run with the original local CSV and a fresh output directory:
+```bash
+python provenance.py --data /absolute/path/PhiUSIIL_Phishing_URL_Dataset.csv --out provenance/full
+```
+This records the CSV SHA-256, starting Git commit and working-tree status, Python,
+OS, installed dependency versions, GPU/CUDA availability, and `pip freeze --all`
+in `provenance.json` and `requirements-environment.txt`. Use the snapshot with
+`python -m pip install -r provenance/full/requirements-environment.txt` in a compatible
+Python/OS environment. This captures the current environment; it cannot recover
+the environment used for the original 27 runs.
+
+The shared training loader reports original, non-missing, and deduplicated row and
+class counts (`label=0` phishing; other non-missing labels legitimate). Cleaning
+removes missing URL/label values, strips URL whitespace, then keeps the first row
+for each exact URL; no normalization or subsampling is applied by this command.
+Signed differences compare against 235,795 original rows and 235,370 cleaned URLs
+(100,520 phishing, 134,850 legitimate). Missing values, whitespace, duplicate order,
+or a different dataset version can affect these counts; the checksum identifies
+the exact input. URLs are processed only as strings and are never fetched.
+
+The original CSV found locally in Downloads was verified: 235,795 original rows
+(100,945 phishing, 134,850 legitimate), no missing URL/label rows, and 235,370
+deduplicated URLs (100,520 phishing, 134,850 legitimate). All reference differences
+are zero; deduplication removes 425 phishing rows. Local capture artifacts are in
+`provenance/full/`. Input SHA-256:
+`a236549cd369cd80bd478ff8e1779cbf44c58d5c3f79f7a51a1adbed7d06d1c6`. Verify the synthetic fixture and training integration with
+`python -m unittest discover -s tests -v`. The historical training environment
+and a new full training run remain unverified. The command captures provenance
+only; use `run_all.py` separately for training. Keep datasets and per-URL outputs
+out of Git; CSV files, `preds/` directories, and `provenance/` are ignored.
