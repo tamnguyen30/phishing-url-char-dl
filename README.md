@@ -96,3 +96,219 @@ are zero; deduplication removes 425 phishing rows. Local capture artifacts are i
 and a new full training run remain unverified. The command captures provenance
 only; use `run_all.py` separately for training. Keep datasets and per-URL outputs
 out of Git; CSV files, `preds/` directories, and `provenance/` are ignored.
+
+## Registrable-domain splits and offline leakage audit
+Hostname grouping remains the default, with the original two-stage 70/15/15 group
+split and seeds. To group subdomains such as `shop.example.co.uk` and
+`login.example.co.uk` together, select `--group_by registrable`:
+```bash
+python train.py --data /absolute/path/PhiUSIIL_Phishing_URL_Dataset.csv --model charcnn --normalize strip --group_by registrable --out results_registrable --no_preds
+python run_all.py --data /absolute/path/PhiUSIIL_Phishing_URL_Dataset.csv --group_by registrable --out results_registrable
+python summarize.py results_registrable
+python audit_splits.py --data /absolute/path/PhiUSIIL_Phishing_URL_Dataset.csv --out results_leakage_new --seeds 42 43 44
+python -m unittest discover -s tests -v
+```
+Registrable training defaults to `results_registrable`; the audit requires a fresh
+output directory and refuses `results/`. Keep different grouping methods in separate
+training directories. All CSV and `preds/` outputs remain ignored; nothing is pushed.
+
+Domain grouping uses `tldextract==5.3.0` and the committed [PSL snapshot](suffixes/README.md)
+(version `2025-04-07_15-51-09_UTC`), without network access or cache updates. Private
+suffixes are included, so `a.blogspot.com` and `b.blogspot.com` are separate tenants.
+Hostnames are lowercased, IDNA-encoded and stripped of a final dot for domain grouping.
+IPv4/IPv6 literals group by canonical address. Valid hosts with unknown suffixes,
+single-label hosts and suffix-only hosts fall back to their full canonical hostname.
+Empty or malformed hosts (including invalid ports, brackets, IDNA or DNS labels) all
+share one conservative fallback group. Fallback keys have separate namespaces;
+`registrable_domains` excludes them, while `domain_group_keys` includes them.
+Fallback row counts are recorded overall and per partition. Groups are computed
+before model normalization; group fractions need not equal URL/class fractions.
+
+The audit reconstructs original splits from deduplicated URLs with `normalize=none`
+and compares both grouping methods using the same splitter. It saves aggregate
+`audit.json` plus the actual environment's dependency snapshot, including input
+checksum, starting Git state and parser/snapshot versions. No URL, host, domain,
+canonical key, or template lists are saved. Partition counts include URLs, classes,
+hostnames, registrable domains and fallback groups. For each partition pair:
+
+- `shared_registrable_domains` counts distinct registrable domains present on both
+  sides; `shared_domain_group_keys` also includes fallback keys.
+- `scheme_www_hostcase_exact` counts distinct URL strings shared after removing the
+  scheme and one leading `www.` and lowercasing the hostname. Credentials, explicit
+  ports, trailing dots, path/query/fragment spelling and empty delimiters are retained;
+  percent escapes and default ports are not normalized. Malformed hosts are excluded
+  from all three URL/template audits with an explicit count. `left_urls`/`right_urls` count contributing original rows.
+- `possible_path_similarities` uses the case-sensitive raw path, replacing every
+  ASCII digit run with `{n}`. Empty paths are excluded; `/` is retained as a broad
+  homepage similarity. There is no percent decoding, slash collapsing or other normalization.
+- `possible_query_similarities` uses a sorted tuple of decoded query parameter
+  names, preserving repeated names and ignoring all values and their order. Parsing
+  uses `parse_qsl(..., keep_blank_values=True)`; empty queries are excluded. Paths
+  and fragments are ignored for this separate query audit.
+
+A template is counted once per partition pair only when at least one occurrence
+on each side belongs to a different domain grouping key. Contributing URL counts
+include only rows with a different-domain counterpart. Path and query counts are
+separate and must not be added as unique URLs. These broad templates indicate
+**possible similarities**, not confirmed leakage, copied content, or measured model
+impact. Identical templates confined to the same domain do not count.
+
+Real-data results and partition counts are in [the audit report](results_leakage/REPORT.md).
+All nine original seed/normalization split configurations were compared against the
+previous commit and matched exactly. The original 27 result JSON files and summary
+remain unchanged. Two 500-row TF-IDF training smoke tests passed; full model
+retraining has not been performed.
+
+## Freeze and reload fixed domain assignments (no scores)
+
+The documented original 27 experiments used the full cleaned CSV with seeds 42–44;
+there is no evidence of domains untouched by previous training or evaluation.
+Therefore this freeze is a **same-dataset robustness holdout**, not an independent
+unseen-data test. The earlier audit and smoke runs also used this dataset. No model
+scores were inspected to choose this freeze, and no models were fitted or scored
+in this step. The frozen test partition remains reserved from model selection.
+
+Freeze once, before any new model evaluation (exclusive creation refuses overwrite):
+
+```bash
+.venv/bin/python frozen_splits.py --data /Users/shanabilliot/Downloads/PhiUSIIL_Phishing_URL_Dataset.csv --manifest private_splits/robustness-seed42.split-manifest.json --seed 42
+.venv/bin/python frozen_splits.py --data /Users/shanabilliot/Downloads/PhiUSIIL_Phishing_URL_Dataset.csv --manifest private_splits/robustness-seed42.split-manifest.json --verify
+# Validate the training entry point across all models and input settings, without scoring:
+.venv/bin/python run_all.py --data /Users/shanabilliot/Downloads/PhiUSIIL_Phishing_URL_Dataset.csv --group_by registrable --split_manifest private_splits/robustness-seed42.split-manifest.json --seeds 42 --split_only
+.venv/bin/python -m unittest discover -s tests -v
+```
+
+Use your CSV's absolute path if different. For a new freeze, use a new manifest
+filename. Share that same manifest across every model, normalization, max length,
+embedding size and initialization seed. With a manifest, `--seed` controls model
+initialization only; the manifest records the split seed. `--max_rows` is rejected.
+Manifest loading verifies the raw CSV SHA-256, loader columns/class mapping,
+cleaned URL coverage and uniqueness, original URL hashes, recomputed domain keys,
+parser/PSL/cleaning policy, partition names, split counts and zero pairwise group
+overlap. It never silently regenerates assignments. Assignments are applied before
+normalization; any empty normalized inputs are filtered within their existing
+partition and counts are printed per partition (and saved in training args).
+The manifest stores SHA-256 hashes of cleaned original URLs, domain group keys,
+partitions, dataset checksum, cleaning counts, seed and grouping policy. It contains
+private domain identifiers: creation uses mode 0600; `private_splits/` and
+`*.split-manifest.json` are ignored. Keep it locally for reproduction. Model output
+filenames include a manifest checksum suffix to distinguish frozen runs from older
+results. `--split_only` exits before fitting, model selection, prediction or scoring;
+retain that option for this step. Normal training without it retains the existing
+validation-selection and final-test evaluation behavior for a later evaluation step.
+
+The real seed-42 freeze used CSV SHA-256
+`a236549cd369cd80bd478ff8e1779cbf44c58d5c3f79f7a51a1adbed7d06d1c6`:
+
+| Partition | URLs | Domain groups (including fallback) |
+|---|---:|---:|
+| train | 166,319 | 138,395 |
+| validation | 35,457 | 29,657 |
+| test | 33,594 | 29,657 |
+
+All 235,370 assignments survived save/reload exactly. Train/validation, train/test
+and validation/test group overlaps are each zero. Across all three models and all
+three normalizations, assignments are identical; preprocessing filters zero rows
+in each partition on this CSV. Cleaning first removes 425 duplicate rows and zero
+missing URL/label rows from 235,795 originals. Synthetic tests additionally cover
+filtered malformed inputs, duplicate/missing rows, checksum/policy/assignment/count
+mismatches, exclusive creation and private file permissions. No new test scores
+were produced, and historical results remain unchanged.
+
+## Formatting and truncation diagnostics on frozen training + validation
+
+With the same CSV and existing seed-42 manifest, run from the repository root
+(after activating the environment and installing requirements):
+
+```bash
+python summarize_inputs.py --data data/PhiUSIIL_Phishing_URL_Dataset.csv --manifest private_splits/robustness-seed42.split-manifest.json --out results_input_effects_new
+python -m unittest discover -s tests -v
+```
+
+Replace `--data` with the location of your local CSV. The output directory must be
+new. Reload the existing manifest; do not create a different split for this analysis.
+The command verifies the dataset and assignments before writing aggregate-only
+`REPORT.md` and `summary.json`. It fits no models and computes no scores. The JSON
+records dataset/manifest checksums, split seed, selected partition sizes, filtering
+counts, parser failures and unrounded percentages. Real-data outputs are committed
+in [results_input_effects/REPORT.md](results_input_effects/REPORT.md) and
+[summary.json](results_input_effects/summary.json).
+
+Both exploratory tables pool **training and validation only**: 166,319 + 35,457 =
+201,776 rows. Frozen test rows are excluded. Each denominator is the count for that
+class after input preprocessing; percentages are within that class and input.
+Formatting counts overlap and should not be added together. The prefix check is
+literal, case-sensitive `https://www.`. A nonempty parsed path includes `/`.
+A query means a nonempty parsed query string; a bare `?` does not count. Scheme-less
+stripped inputs are parsed as authorities by prepending `//` for parsing only,
+so their host is recognized instead of being miscounted as a path. Malformed
+bracket syntax is recorded as a parse failure, with no path/query flags.
+
+Training and the analysis share `preprocessing.py`. The order is shared CSV cleaning
+(drop missing URL/label, trim surrounding whitespace, keep first exact duplicate),
+frozen assignment lookup on original cleaned URLs, input normalization, removal of
+empty transformed inputs, then measurement/truncation at 200 Python characters.
+`raw` corresponds to `--normalize none`; `stripped` removes the scheme and one
+leading `www.`; `host-only` uses the training hostname extraction. No deduplication
+is repeated after normalization. Truncation affects lengths strictly greater than
+200; removed characters are `transformed_length - 200`. Medians use affected URLs
+only; N/A means none were affected. On the real CSV no selected rows are filtered,
+and there are no formatting parse failures.
+
+A separately labeled **full-dataset historical check** only verifies the reported
+raw-length claim: 1,427 of 235,370 deduplicated raw URLs exceed 200 characters,
+all 1,427 phishing and zero legitimate. This check includes the frozen test rows
+solely to reproduce that historical aggregate; new formatting and transformed-input
+exploration remains confined to training and validation. The observed increase in
+median removal from raw to stripped is over different affected subsets: stripping
+makes some URLs short enough to leave that subset.
+
+## Paired full versus 200-character TF-IDF baseline (validation only)
+
+Use the existing frozen registrable-domain manifest. From the repository root,
+with the environment activated and dependencies installed:
+
+```bash
+python compare_tfidf_lengths.py --data data/PhiUSIIL_Phishing_URL_Dataset.csv --manifest private_splits/robustness-seed42.split-manifest.json --out results_tfidf_lengths_new --seed 42
+python -m unittest discover -s tests -v
+```
+
+Replace the CSV path with its location on your machine. Use a fresh output directory.
+This one command runs both comparisons and writes aggregate `comparison.json` and
+`REPORT.md`, separately from `results/` and its original 27 experiments. The real
+run's exact command, input/manifest checksums, partition/class sample counts,
+row-and-label digests, dependency versions, full estimator settings, convergence
+diagnostics and unrounded validation metrics are recorded with the results.
+The manifest's split seed determines assignments; `--seed` seeds the paired runs.
+
+The command removes test rows before input normalization and never fits,
+transforms, predicts or scores the frozen test partition. Manifest integrity
+validation still verifies all assignments and group disjointness. Only training
+and validation are used in the comparison. Both runs use identical cleaned rows,
+labels, stripping, hyperparameters and a fixed 0.5 probability threshold (positive
+class is phishing). Empty stripped inputs are filtered once, before either run;
+counts are recorded. One run uses full stripped strings; the other takes the first
+200 Python characters **after** stripping, without repeating deduplication.
+Each run independently fits its vocabulary and IDF on its own training inputs,
+then transforms validation with that fitted vectorizer.
+
+Both entry points share the existing baseline constructors: character TF-IDF,
+2–5-grams, `min_df=5`, sublinear TF, at most 500,000 features, case preserved;
+logistic regression `C=10`, `max_iter=1000`, with all other existing defaults.
+The comparison records those defaults and fixes numerical thread pools to one
+thread for both runs. No hyperparameters or thresholds are selected. Reported
+changes are **200 characters minus full length**, in absolute metric units.
+The results are a validation comparison on the same-dataset robustness split,
+not a test-set evaluation or an independent-dataset generalization claim.
+
+Real-CSV results: [comparison report](results_tfidf_lengths/REPORT.md) and
+[complete aggregate record](results_tfidf_lengths/comparison.json). Split seed 42;
+166,319 training rows and 35,457 validation rows; zero rows filtered. At threshold
+0.5, full-length validation phishing precision/recall/F1 are
+0.939464/0.825049/0.878547; first-200 results are
+0.939416/0.825375/0.878711. Changes (200 minus full, computed before rounding) are
+−0.000047/+0.000326/+0.000164. Both fits converged without convergence warnings
+(34 and 60 iterations). Truncation changed 984 training and 176 validation inputs.
+These are descriptive results for this fixed split; no uncertainty estimate or
+independent-dataset comparison is included. They do not reproduce the historical
+training environment, which remains undocumented.

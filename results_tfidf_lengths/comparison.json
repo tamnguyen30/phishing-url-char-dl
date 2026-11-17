@@ -1,0 +1,123 @@
+{
+  "scope": "frozen train/validation only; test sealed",
+  "dataset_sha256": "a236549cd369cd80bd478ff8e1779cbf44c58d5c3f79f7a51a1adbed7d06d1c6",
+  "manifest_sha256": "96fe7538fc21c403d7df981bd905b8303c53297ee58371a68fc8d3aeb7fdf0cc",
+  "split_seed": 42,
+  "model_seed": 42,
+  "holdout_type": "same-dataset robustness holdout",
+  "threshold": 0.5,
+  "positive_class": "phishing (original label=0)",
+  "counts": {
+    "train": {
+      "rows": 166319,
+      "phishing": 71855,
+      "legitimate": 94464
+    },
+    "validation": {
+      "rows": 35457,
+      "phishing": 15330,
+      "legitimate": 20127
+    }
+  },
+  "assignment_label_digests": {
+    "train": "f339b9f648ca95112f94ebf06ec9fab74f629264e3e252cfcf3e281af8549f51",
+    "validation": "baf01f984ba554ca3d87f7c27ff11d275110c3a9c7cb403ee5aa55b751694988"
+  },
+  "filtered": {
+    "train": 0,
+    "validation": 0
+  },
+  "vectorizer_params": {
+    "analyzer": "char",
+    "binary": false,
+    "decode_error": "strict",
+    "dtype": "float64",
+    "encoding": "utf-8",
+    "input": "content",
+    "lowercase": false,
+    "max_df": 1.0,
+    "max_features": 500000,
+    "min_df": 5,
+    "ngram_range": [
+      2,
+      5
+    ],
+    "norm": "l2",
+    "preprocessor": null,
+    "smooth_idf": true,
+    "stop_words": null,
+    "strip_accents": null,
+    "sublinear_tf": true,
+    "token_pattern": "(?u)\\b\\w\\w+\\b",
+    "tokenizer": null,
+    "use_idf": true,
+    "vocabulary": null
+  },
+  "classifier_params": {
+    "C": 10.0,
+    "class_weight": null,
+    "dual": false,
+    "fit_intercept": true,
+    "intercept_scaling": 1,
+    "l1_ratio": 0.0,
+    "max_iter": 1000,
+    "n_jobs": -1,
+    "penalty": "deprecated",
+    "random_state": null,
+    "solver": "lbfgs",
+    "tol": 0.0001,
+    "verbose": 0,
+    "warm_start": false
+  },
+  "threads": 1,
+  "python": "3.13.1",
+  "dependencies": {
+    "numpy": "2.5.5",
+    "pandas": "3.1.1",
+    "scipy": "1.18.1",
+    "scikit-learn": "1.9.1",
+    "threadpoolctl": "3.8.0",
+    "tldextract": "5.3.0"
+  },
+  "git_commit": "28ed58c6b977383f18cd60307375f146797b6546",
+  "reproduction_command": "/Users/shanabilliot/phishing-url-char-dl/.venv/bin/python compare_tfidf_lengths.py --data /Users/shanabilliot/Downloads/PhiUSIIL_Phishing_URL_Dataset.csv --manifest private_splits/robustness-seed42.split-manifest.json --out results_tfidf_lengths --seed 42",
+  "results": {
+    "full": {
+      "validation_phishing": {
+        "precision": 0.9394637153680457,
+        "recall": 0.8250489236790607,
+        "f1": 0.8785468690306671
+      },
+      "vocabulary_size": 232887,
+      "iterations": [
+        34
+      ],
+      "convergence_warnings": [],
+      "affected_rows": {
+        "train": 0,
+        "validation": 0
+      }
+    },
+    "first_200": {
+      "validation_phishing": {
+        "precision": 0.9394164377459351,
+        "recall": 0.8253750815394651,
+        "f1": 0.8787110663564707
+      },
+      "vocabulary_size": 224821,
+      "iterations": [
+        60
+      ],
+      "convergence_warnings": [],
+      "affected_rows": {
+        "train": 984,
+        "validation": 176
+      }
+    },
+    "change_200_minus_full": {
+      "precision": -4.7277622110653006e-05,
+      "recall": 0.0003261578604044635,
+      "f1": 0.00016419732580352786
+    }
+  }
+}
