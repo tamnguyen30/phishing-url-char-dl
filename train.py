@@ -20,8 +20,7 @@ from dataset import load_dataset
 from preprocessing import strip_prefix, normalize_frame
 import torch
 import torch.nn as nn
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
+from tfidf_baseline import estimators
 from sklearn.metrics import (accuracy_score, average_precision_score, f1_score,
                              precision_score, recall_score, roc_auc_score)
 from splitting import host_of, domain_of, split_frame, parser_metadata
@@ -186,10 +185,9 @@ def run_neural(args, train, val, test):
 
 def run_tfidf(args, train, val, test):
     t0 = time.time()
-    vec = TfidfVectorizer(analyzer="char", ngram_range=(2, 5), min_df=5, sublinear_tf=True,
-                          max_features=500_000, lowercase=False)
+    vec, clf = estimators(args.C)
     Xtr = vec.fit_transform(train.url)
-    clf = LogisticRegression(max_iter=1000, C=args.C, n_jobs=-1).fit(Xtr, train.y)
+    clf.fit(Xtr, train.y)
     extra = dict(train_time_s=time.time() - t0,
                  val=metrics(val.y.values, clf.predict_proba(vec.transform(val.url))[:, 1]))
     p = clf.predict_proba(vec.transform(test.url))[:, 1]

@@ -262,3 +262,53 @@ solely to reproduce that historical aggregate; new formatting and transformed-in
 exploration remains confined to training and validation. The observed increase in
 median removal from raw to stripped is over different affected subsets: stripping
 makes some URLs short enough to leave that subset.
+
+## Paired full versus 200-character TF-IDF baseline (validation only)
+
+Use the existing frozen registrable-domain manifest. From the repository root,
+with the environment activated and dependencies installed:
+
+```bash
+python compare_tfidf_lengths.py --data data/PhiUSIIL_Phishing_URL_Dataset.csv --manifest private_splits/robustness-seed42.split-manifest.json --out results_tfidf_lengths_new --seed 42
+python -m unittest discover -s tests -v
+```
+
+Replace the CSV path with its location on your machine. Use a fresh output directory.
+This one command runs both comparisons and writes aggregate `comparison.json` and
+`REPORT.md`, separately from `results/` and its original 27 experiments. The real
+run's exact command, input/manifest checksums, partition/class sample counts,
+row-and-label digests, dependency versions, full estimator settings, convergence
+diagnostics and unrounded validation metrics are recorded with the results.
+The manifest's split seed determines assignments; `--seed` seeds the paired runs.
+
+The command removes test rows before input normalization and never fits,
+transforms, predicts or scores the frozen test partition. Manifest integrity
+validation still verifies all assignments and group disjointness. Only training
+and validation are used in the comparison. Both runs use identical cleaned rows,
+labels, stripping, hyperparameters and a fixed 0.5 probability threshold (positive
+class is phishing). Empty stripped inputs are filtered once, before either run;
+counts are recorded. One run uses full stripped strings; the other takes the first
+200 Python characters **after** stripping, without repeating deduplication.
+Each run independently fits its vocabulary and IDF on its own training inputs,
+then transforms validation with that fitted vectorizer.
+
+Both entry points share the existing baseline constructors: character TF-IDF,
+2–5-grams, `min_df=5`, sublinear TF, at most 500,000 features, case preserved;
+logistic regression `C=10`, `max_iter=1000`, with all other existing defaults.
+The comparison records those defaults and fixes numerical thread pools to one
+thread for both runs. No hyperparameters or thresholds are selected. Reported
+changes are **200 characters minus full length**, in absolute metric units.
+The results are a validation comparison on the same-dataset robustness split,
+not a test-set evaluation or an independent-dataset generalization claim.
+
+Real-CSV results: [comparison report](results_tfidf_lengths/REPORT.md) and
+[complete aggregate record](results_tfidf_lengths/comparison.json). Split seed 42;
+166,319 training rows and 35,457 validation rows; zero rows filtered. At threshold
+0.5, full-length validation phishing precision/recall/F1 are
+0.939464/0.825049/0.878547; first-200 results are
+0.939416/0.825375/0.878711. Changes (200 minus full, computed before rounding) are
+−0.000047/+0.000326/+0.000164. Both fits converged without convergence warnings
+(34 and 60 iterations). Truncation changed 984 training and 176 validation inputs.
+These are descriptive results for this fixed split; no uncertainty estimate or
+independent-dataset comparison is included. They do not reproduce the historical
+training environment, which remains undocumented.
