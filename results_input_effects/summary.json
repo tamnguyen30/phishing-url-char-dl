@@ -1,0 +1,196 @@
+{
+  "formatting": [
+    {
+      "input": "raw",
+      "class_name": "phishing",
+      "denominator": 87185,
+      "https_www": {
+        "count": 2124,
+        "percent": 2.4361988874232954
+      },
+      "path": {
+        "count": 52340,
+        "percent": 60.0332626025119
+      },
+      "query": {
+        "count": 5331,
+        "percent": 6.114583930722028
+      },
+      "parse_failures": 0
+    },
+    {
+      "input": "raw",
+      "class_name": "legitimate",
+      "denominator": 114591,
+      "https_www": {
+        "count": 114591,
+        "percent": 100.0
+      },
+      "path": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "query": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "parse_failures": 0
+    },
+    {
+      "input": "stripped",
+      "class_name": "phishing",
+      "denominator": 87185,
+      "https_www": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "path": {
+        "count": 52340,
+        "percent": 60.0332626025119
+      },
+      "query": {
+        "count": 5331,
+        "percent": 6.114583930722028
+      },
+      "parse_failures": 0
+    },
+    {
+      "input": "stripped",
+      "class_name": "legitimate",
+      "denominator": 114591,
+      "https_www": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "path": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "query": {
+        "count": 0,
+        "percent": 0.0
+      },
+      "parse_failures": 0
+    }
+  ],
+  "truncation": [
+    {
+      "input": "raw",
+      "class_name": "phishing",
+      "denominator": 87185,
+      "exceeding_200": 1306,
+      "percent": 1.497964099329013,
+      "median_removed": 63.5
+    },
+    {
+      "input": "raw",
+      "class_name": "legitimate",
+      "denominator": 114591,
+      "exceeding_200": 0,
+      "percent": 0.0,
+      "median_removed": null
+    },
+    {
+      "input": "stripped",
+      "class_name": "phishing",
+      "denominator": 87185,
+      "exceeding_200": 1160,
+      "percent": 1.3305041004759992,
+      "median_removed": 77.0
+    },
+    {
+      "input": "stripped",
+      "class_name": "legitimate",
+      "denominator": 114591,
+      "exceeding_200": 0,
+      "percent": 0.0,
+      "median_removed": null
+    },
+    {
+      "input": "host-only",
+      "class_name": "phishing",
+      "denominator": 87185,
+      "exceeding_200": 0,
+      "percent": 0.0,
+      "median_removed": null
+    },
+    {
+      "input": "host-only",
+      "class_name": "legitimate",
+      "denominator": 114591,
+      "exceeding_200": 0,
+      "percent": 0.0,
+      "median_removed": null
+    }
+  ],
+  "preprocessing_filtered": [
+    {
+      "input": "raw",
+      "class_name": "phishing",
+      "rows": 0
+    },
+    {
+      "input": "raw",
+      "class_name": "legitimate",
+      "rows": 0
+    },
+    {
+      "input": "stripped",
+      "class_name": "phishing",
+      "rows": 0
+    },
+    {
+      "input": "stripped",
+      "class_name": "legitimate",
+      "rows": 0
+    },
+    {
+      "input": "host-only",
+      "class_name": "phishing",
+      "rows": 0
+    },
+    {
+      "input": "host-only",
+      "class_name": "legitimate",
+      "rows": 0
+    }
+  ],
+  "scope": "pooled frozen training + validation only",
+  "max_len": 200,
+  "dataset_sha256": "a236549cd369cd80bd478ff8e1779cbf44c58d5c3f79f7a51a1adbed7d06d1c6",
+  "manifest_sha256": "96fe7538fc21c403d7df981bd905b8303c53297ee58371a68fc8d3aeb7fdf0cc",
+  "split_seed": 42,
+  "holdout_type": "same-dataset robustness holdout",
+  "cleaning_counts": {
+    "original": {
+      "rows": 235795,
+      "phishing": 100945,
+      "legitimate": 134850,
+      "missing_labels": 0
+    },
+    "non_missing": {
+      "rows": 235795,
+      "phishing": 100945,
+      "legitimate": 134850,
+      "missing_labels": 0
+    },
+    "deduplicated": {
+      "rows": 235370,
+      "phishing": 100520,
+      "legitimate": 134850,
+      "missing_labels": 0
+    }
+  },
+  "selected_partitions": {
+    "train": 166319,
+    "validation": 35457
+  },
+  "historical_full_dataset_check": {
+    "scope": "full deduplicated dataset; historical check only",
+    "denominator": 235370,
+    "raw_exceeding_200": 1427,
+    "phishing": 1427,
+    "legitimate": 0,
+    "matches_report": true
+  }
+}

@@ -12,11 +12,12 @@ Key design choices (to avoid leakage):
   * exact-duplicate URLs are dropped
   * train/val/test are split by HOSTNAME (GroupShuffleSplit), so no host appears in two splits
 """
-import argparse, json, os, random, re, time
+import argparse, json, os, random, time
 from collections import Counter
 
 import numpy as np
 from dataset import load_dataset
+from preprocessing import strip_prefix, normalize_frame
 import torch
 import torch.nn as nn
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -31,12 +32,6 @@ from torch.utils.data import DataLoader, TensorDataset
 def set_seed(seed):
     random.seed(seed); np.random.seed(seed)
     torch.manual_seed(seed); torch.cuda.manual_seed_all(seed)
-
-
-def strip_prefix(url):
-    """Remove only the scheme (https://) and a leading 'www.'; keep host, path and query."""
-    u = re.sub(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", "", url)
-    return re.sub(r"^www\.", "", u, flags=re.I)
 
 
 def load_and_split(args):
@@ -68,14 +63,7 @@ def load_and_split(args):
         print("domain grouping status:", parsed.map(lambda item: item[1]).value_counts().to_dict())
         group_col = "domain"
     before_preprocessing = (df.partition.value_counts().to_dict() if manifest_path else {"all": len(df)})
-    if args.normalize == "host":
-        # remove path/scheme/www so the model cannot use the "has a path" shortcut
-        df["url"] = df["host"]
-        df = df[df["url"] != ""].reset_index(drop=True)
-    elif args.normalize == "strip":
-        # remove only scheme + leading www.; the path is kept
-        df["url"] = df["url"].map(strip_prefix)
-        df = df[df["url"] != ""].reset_index(drop=True)
+    df = normalize_frame(df, args.normalize)
     print(f"rows: {n0} -> {len(df)} after dedup | phishing rate: {df['y'].mean():.3f}")
 
     if manifest_path:

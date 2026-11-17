@@ -214,3 +214,51 @@ missing URL/label rows from 235,795 originals. Synthetic tests additionally cove
 filtered malformed inputs, duplicate/missing rows, checksum/policy/assignment/count
 mismatches, exclusive creation and private file permissions. No new test scores
 were produced, and historical results remain unchanged.
+
+## Formatting and truncation diagnostics on frozen training + validation
+
+With the same CSV and existing seed-42 manifest, run from the repository root
+(after activating the environment and installing requirements):
+
+```bash
+python summarize_inputs.py --data data/PhiUSIIL_Phishing_URL_Dataset.csv --manifest private_splits/robustness-seed42.split-manifest.json --out results_input_effects_new
+python -m unittest discover -s tests -v
+```
+
+Replace `--data` with the location of your local CSV. The output directory must be
+new. Reload the existing manifest; do not create a different split for this analysis.
+The command verifies the dataset and assignments before writing aggregate-only
+`REPORT.md` and `summary.json`. It fits no models and computes no scores. The JSON
+records dataset/manifest checksums, split seed, selected partition sizes, filtering
+counts, parser failures and unrounded percentages. Real-data outputs are committed
+in [results_input_effects/REPORT.md](results_input_effects/REPORT.md) and
+[summary.json](results_input_effects/summary.json).
+
+Both exploratory tables pool **training and validation only**: 166,319 + 35,457 =
+201,776 rows. Frozen test rows are excluded. Each denominator is the count for that
+class after input preprocessing; percentages are within that class and input.
+Formatting counts overlap and should not be added together. The prefix check is
+literal, case-sensitive `https://www.`. A nonempty parsed path includes `/`.
+A query means a nonempty parsed query string; a bare `?` does not count. Scheme-less
+stripped inputs are parsed as authorities by prepending `//` for parsing only,
+so their host is recognized instead of being miscounted as a path. Malformed
+bracket syntax is recorded as a parse failure, with no path/query flags.
+
+Training and the analysis share `preprocessing.py`. The order is shared CSV cleaning
+(drop missing URL/label, trim surrounding whitespace, keep first exact duplicate),
+frozen assignment lookup on original cleaned URLs, input normalization, removal of
+empty transformed inputs, then measurement/truncation at 200 Python characters.
+`raw` corresponds to `--normalize none`; `stripped` removes the scheme and one
+leading `www.`; `host-only` uses the training hostname extraction. No deduplication
+is repeated after normalization. Truncation affects lengths strictly greater than
+200; removed characters are `transformed_length - 200`. Medians use affected URLs
+only; N/A means none were affected. On the real CSV no selected rows are filtered,
+and there are no formatting parse failures.
+
+A separately labeled **full-dataset historical check** only verifies the reported
+raw-length claim: 1,427 of 235,370 deduplicated raw URLs exceed 200 characters,
+all 1,427 phishing and zero legitimate. This check includes the frozen test rows
+solely to reproduce that historical aggregate; new formatting and transformed-input
+exploration remains confined to training and validation. The observed increase in
+median removal from raw to stripped is over different affected subsets: stripping
+makes some URLs short enough to leave that subset.
