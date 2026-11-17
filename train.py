@@ -41,6 +41,19 @@ def strip_prefix(url):
 
 def load_and_split(args):
     df, counts = load_dataset(args.data, args.url_col, args.label_col, args.phish_label)
+    manifest_path = getattr(args, "split_manifest", None)
+    if manifest_path:
+        from frozen_splits import load_manifest
+        if args.max_rows:
+            raise ValueError("split manifest cannot be combined with --max_rows")
+        if getattr(args, "group_by", "hostname") != "registrable":
+            raise ValueError("split manifest requires --group_by registrable")
+        assignments, manifest = load_manifest(manifest_path, args.data, df,
+            args.url_col, args.label_col, args.phish_label)
+        df["partition"] = assignments
+        from frozen_splits import url_hash
+        df["url_sha256"] = df.url.map(url_hash)
+        print("frozen split seed:", manifest["seed"], "|", manifest["holdout_type"])
     n0 = counts["non_missing"]["rows"]
     if args.max_rows:
         df = df.sample(args.max_rows, random_state=args.seed).reset_index(drop=True)
@@ -54,6 +67,7 @@ def load_and_split(args):
         print("domain parser:", parser_metadata())
         print("domain grouping status:", parsed.map(lambda item: item[1]).value_counts().to_dict())
         group_col = "domain"
+    before_preprocessing = (df.partition.value_counts().to_dict() if manifest_path else {"all": len(df)})
     if args.normalize == "host":
         # remove path/scheme/www so the model cannot use the "has a path" shortcut
         df["url"] = df["host"]
@@ -64,7 +78,15 @@ def load_and_split(args):
         df = df[df["url"] != ""].reset_index(drop=True)
     print(f"rows: {n0} -> {len(df)} after dedup | phishing rate: {df['y'].mean():.3f}")
 
-    train, val, test = split_frame(df, args.seed, group_col)
+    if manifest_path:
+        train, val, test = (df[df.partition == name].copy() for name in ("train", "validation", "test"))
+        filtered = {name: before_preprocessing.get(name, 0) - len(part)
+                    for name, part in zip(("train", "validation", "test"), (train, val, test))}
+    else:
+        train, val, test = split_frame(df, args.seed, group_col)
+        filtered = {"all": before_preprocessing["all"] - len(df)}
+    print("rows filtered after preprocessing:", filtered)
+    args.preprocessing_filtered = filtered
     for n, d in [("train", train), ("val", val), ("test", test)]:
         print(f"{n}: {len(d)} urls, {d.host.nunique()} hosts, phishing rate {d.y.mean():.3f}")
     return train, val, test
@@ -208,6 +230,8 @@ if __name__ == "__main__":
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--max_rows", type=int, default=0, help="subsample for quick debugging")
     ap.add_argument("--group_by", choices=["hostname", "registrable"], default="hostname")
+    ap.add_argument("--split_manifest", help="private frozen assignments; requires registrable grouping; seed controls model initialization only")
+    ap.add_argument("--split_only", action="store_true", help="validate splits and preprocessing, then exit without training or scoring")
     ap.add_argument("--out", default=None)
     ap.add_argument("--no_preds", action="store_true", help="do not save per-URL test predictions")
     args = ap.parse_args()
@@ -216,13 +240,22 @@ if __name__ == "__main__":
     if args.group_by == "registrable" and os.path.realpath(args.out) == os.path.realpath(os.path.join(os.path.dirname(__file__), "results")):
         ap.error("registrable runs require a separate output directory")
     set_seed(args.seed)
-    train, val, test = load_and_split(args)
+    try:
+        train, val, test = load_and_split(args)
+    except (ValueError, OSError) as exc:
+        ap.error(str(exc))
+    if args.split_only:
+        raise SystemExit(0)
     test_m, extra, p_test = (run_tfidf if args.model == "tfidf_lr" else run_neural)(args, train, val, test)
     split_label = "host-disjoint" if args.group_by == "hostname" else "registrable-group-disjoint"
     print(f"TEST ({split_label}):", {k: round(v, 4) for k, v in test_m.items()})
 
     os.makedirs(args.out, exist_ok=True)
     tag = f"{args.model}_norm{args.normalize}_len{args.max_len}_emb{args.emb_dim}_seed{args.seed}"
+    if args.split_manifest:
+        from provenance import sha256
+        from pathlib import Path
+        tag += "_split" + sha256(Path(args.split_manifest))[:12]
     with open(os.path.join(args.out, tag + ".json"), "w") as f:
         json.dump(dict(args=vars(args), test=test_m, extra=extra,
                        grouping_metadata=dict(**parser_metadata(), partitions={

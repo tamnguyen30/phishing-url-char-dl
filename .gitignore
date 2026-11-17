@@ -9,3 +9,7 @@ __pycache__/
 *.csv
 **/preds/
 provenance/
+
+# Private per-URL frozen split assignments
+private_splits/
+*.split-manifest.json

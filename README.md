@@ -158,3 +158,59 @@ All nine original seed/normalization split configurations were compared against 
 previous commit and matched exactly. The original 27 result JSON files and summary
 remain unchanged. Two 500-row TF-IDF training smoke tests passed; full model
 retraining has not been performed.
+
+## Freeze and reload fixed domain assignments (no scores)
+
+The documented original 27 experiments used the full cleaned CSV with seeds 42–44;
+there is no evidence of domains untouched by previous training or evaluation.
+Therefore this freeze is a **same-dataset robustness holdout**, not an independent
+unseen-data test. The earlier audit and smoke runs also used this dataset. No model
+scores were inspected to choose this freeze, and no models were fitted or scored
+in this step. The frozen test partition remains reserved from model selection.
+
+Freeze once, before any new model evaluation (exclusive creation refuses overwrite):
+
+```bash
+.venv/bin/python frozen_splits.py --data /Users/shanabilliot/Downloads/PhiUSIIL_Phishing_URL_Dataset.csv --manifest private_splits/robustness-seed42.split-manifest.json --seed 42
+.venv/bin/python frozen_splits.py --data /Users/shanabilliot/Downloads/PhiUSIIL_Phishing_URL_Dataset.csv --manifest private_splits/robustness-seed42.split-manifest.json --verify
+# Validate the training entry point across all models and input settings, without scoring:
+.venv/bin/python run_all.py --data /Users/shanabilliot/Downloads/PhiUSIIL_Phishing_URL_Dataset.csv --group_by registrable --split_manifest private_splits/robustness-seed42.split-manifest.json --seeds 42 --split_only
+.venv/bin/python -m unittest discover -s tests -v
+```
+
+Use your CSV's absolute path if different. For a new freeze, use a new manifest
+filename. Share that same manifest across every model, normalization, max length,
+embedding size and initialization seed. With a manifest, `--seed` controls model
+initialization only; the manifest records the split seed. `--max_rows` is rejected.
+Manifest loading verifies the raw CSV SHA-256, loader columns/class mapping,
+cleaned URL coverage and uniqueness, original URL hashes, recomputed domain keys,
+parser/PSL/cleaning policy, partition names, split counts and zero pairwise group
+overlap. It never silently regenerates assignments. Assignments are applied before
+normalization; any empty normalized inputs are filtered within their existing
+partition and counts are printed per partition (and saved in training args).
+The manifest stores SHA-256 hashes of cleaned original URLs, domain group keys,
+partitions, dataset checksum, cleaning counts, seed and grouping policy. It contains
+private domain identifiers: creation uses mode 0600; `private_splits/` and
+`*.split-manifest.json` are ignored. Keep it locally for reproduction. Model output
+filenames include a manifest checksum suffix to distinguish frozen runs from older
+results. `--split_only` exits before fitting, model selection, prediction or scoring;
+retain that option for this step. Normal training without it retains the existing
+validation-selection and final-test evaluation behavior for a later evaluation step.
+
+The real seed-42 freeze used CSV SHA-256
+`a236549cd369cd80bd478ff8e1779cbf44c58d5c3f79f7a51a1adbed7d06d1c6`:
+
+| Partition | URLs | Domain groups (including fallback) |
+|---|---:|---:|
+| train | 166,319 | 138,395 |
+| validation | 35,457 | 29,657 |
+| test | 33,594 | 29,657 |
+
+All 235,370 assignments survived save/reload exactly. Train/validation, train/test
+and validation/test group overlaps are each zero. Across all three models and all
+three normalizations, assignments are identical; preprocessing filters zero rows
+in each partition on this CSV. Cleaning first removes 425 duplicate rows and zero
+missing URL/label rows from 235,795 originals. Synthetic tests additionally cover
+filtered malformed inputs, duplicate/missing rows, checksum/policy/assignment/count
+mismatches, exclusive creation and private file permissions. No new test scores
+were produced, and historical results remain unchanged.
